@@ -1,0 +1,16 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: matex-mysql
+    environment:
+      MYSQL_DATABASE: matex
+      MYSQL_USER: matex
+      MYSQL_PASSWORD: matexpass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - matex_mysql_data:/var/lib/mysql
+
+volumes:
+  matex_mysql_data:

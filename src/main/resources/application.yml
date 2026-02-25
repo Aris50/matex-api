@@ -1,0 +1,23 @@
+
+spring:
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/matex?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: matex
+    password: matexpass
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
