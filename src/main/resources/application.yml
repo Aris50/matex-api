@@ -21,3 +21,7 @@ spring:
 
 server:
   port: 8080
+
+matex:
+  storage:
+    root: storage
