@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface ExerciseSubmissionRepository extends JpaRepository<ExerciseSubmission, Long> {
     List<ExerciseSubmission> findByStudentAssignmentIdAndExerciseIdOrderByAttemptNoDesc(Long studentAssignmentId, Long exerciseId);
     Optional<ExerciseSubmission> findTopByStudentAssignmentIdAndExerciseIdOrderByAttemptNoDesc(Long studentAssignmentId, Long exerciseId);
+    List<ExerciseSubmission> findByStudentAssignmentId(Long studentAssignmentId);
 }

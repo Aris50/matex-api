@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface SubmissionFileRepository extends JpaRepository<SubmissionFile, Long> {
     List<SubmissionFile> findBySubmissionIdOrderByOrderIndexAsc(Long submissionId);
+    List<SubmissionFile> findBySubmissionIdIn(java.util.Collection<Long> submissionIds);
 }
