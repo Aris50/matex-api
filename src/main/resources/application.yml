@@ -25,3 +25,9 @@ server:
 matex:
   storage:
     root: storage
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger
