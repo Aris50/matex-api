@@ -1,4 +1,4 @@
-package com.matex.api.web;
+package com.matex.api.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
