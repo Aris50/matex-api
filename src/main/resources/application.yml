@@ -1,10 +1,9 @@
-
 spring:
   docker:
     compose:
       enabled: false
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/matex?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://127.0.0.1:3307/matex?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: matex
     password: matexpass
 
