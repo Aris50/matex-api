@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Student Dashboard</title>
+    <style>
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:24px;max-width:1100px}
+        input,textarea,button{font:inherit}
+        input,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px}
+        button{padding:10px 14px;border:1px solid #222;border-radius:8px;background:#111;color:#fff;cursor:pointer}
+        button.secondary{background:#fff;color:#111}
+        .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .card{border:1px solid #ddd;border-radius:10px;padding:16px;margin:14px 0}
+        .muted{color:#666;font-size:14px}
+        pre{background:#0b1020;color:#e6e6e6;padding:12px;border-radius:10px;overflow:auto}
+        table{border-collapse:collapse;width:100%}
+        td,th{border-bottom:1px solid #eee;padding:8px;text-align:left}
+        .pill{display:inline-block;padding:4px 10px;border:1px solid #ddd;border-radius:999px;font-size:12px;margin-left:8px}
+    </style>
+</head>
+<body>
+<a href="/">← Home</a>
+<h1>Student Dashboard</h1>
+
+<div class="card">
+    <h2>IDs</h2>
+    <div class="row">
+        <div>
+            <label class="muted">Student ID</label>
+            <input id="studentId" type="number" />
+        </div>
+        <div>
+            <label class="muted">Assignment ID</label>
+            <input id="assignmentId" type="number" />
+        </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="secondary" id="saveIdsBtn">Save IDs</button>
+        <button id="loadAssignmentsBtn">Load My Assignments</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Assignments</h2>
+    <div id="assignmentsWrap" class="muted">Load assignments…</div>
+</div>
+
+<div class="card">
+    <h2>Assignment Details <span class="pill" id="detPill">none</span></h2>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button id="loadDetailsBtn">Load Details</button>
+    </div>
+    <div id="detailsWrap" class="muted">Load details…</div>
+</div>
+
+<div class="card">
+    <h2>Upload Submission</h2>
+    <div class="row">
+        <div>
+            <label class="muted">Exercise ID</label>
+            <input id="exerciseId" type="number" />
+        </div>
+        <div>
+            <label class="muted">Text Result (optional)</label>
+            <input id="textResult" value="My attempt" />
+        </div>
+    </div>
+    <div style="margin-top:12px">
+        <label class="muted">Files (choose multiple)</label>
+        <input id="files" type="file" multiple />
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+        <button id="uploadBtn">Upload</button>
+        <span class="muted">POST multipart submission</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Output</h2>
+    <pre id="out">{}</pre>
+</div>
+
+<script>
+    const out = (obj) => { document.getElementById('out').textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2); };
+    const pill = (id, text) => document.getElementById(id).textContent = text;
+
+    const state = {
+      studentId: Number(localStorage.getItem('studentId') || '2'),
+      assignmentId: Number(localStorage.getItem('assignmentId') || '1'),
+    };
+
+    function syncUI() {
+      document.getElementById('studentId').value = state.studentId || '';
+      document.getElementById('assignmentId').value = state.assignmentId || '';
+      pill('detPill', state.assignmentId ? `id=${state.assignmentId}` : 'none');
+    }
+
+    async function apiJson(method, url, body) {
+      const res = await fetch(url, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const text = await res.text();
+      let data;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!res.ok) throw { status: res.status, data };
+      return data;
+    }
+
+    async function apiMultipart(url, formData) {
+      const res = await fetch(url, { method: 'POST', body: formData });
+      const text = await res.text();
+      let data;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!res.ok) throw { status: res.status, data };
+      return data;
+    }
+
+    document.getElementById('saveIdsBtn').addEventListener('click', () => {
+      state.studentId = Number(document.getElementById('studentId').value);
+      state.assignmentId = Number(document.getElementById('assignmentId').value);
+      localStorage.setItem('studentId', String(state.studentId));
+      localStorage.setItem('assignmentId', String(state.assignmentId));
+      out({ saved: true, studentId: state.studentId, assignmentId: state.assignmentId });
+      syncUI();
+    });
+
+    document.getElementById('loadAssignmentsBtn').addEventListener('click', async () => {
+      try {
+        const data = await apiJson('GET', `/api/v1/student/assignments?studentId=${state.studentId}`);
+        const wrap = document.getElementById('assignmentsWrap');
+        if (!Array.isArray(data) || data.length === 0) {
+          wrap.textContent = 'No assignments';
+          out(data);
+          return;
+        }
+        wrap.innerHTML = `
+          <table>
+            <thead><tr><th>Assignment</th><th>Homework</th><th>Status</th><th>Assigned</th><th>Due</th><th></th></tr></thead>
+            <tbody>
+              ${data.map(a => `
+                <tr>
+                  <td>${a.assignmentId}</td>
+                  <td>${a.homeworkTitle} (id=${a.homeworkId})</td>
+                  <td>${a.status}</td>
+                  <td>${a.assignedAt}</td>
+                  <td>${a.dueAt}</td>
+                  <td><button class="secondary" data-id="${a.assignmentId}">Open</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        wrap.querySelectorAll('button[data-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.assignmentId = Number(btn.getAttribute('data-id'));
+            localStorage.setItem('assignmentId', String(state.assignmentId));
+            syncUI();
+          });
+        });
+        out(data);
+      } catch (e) {
+        out(e);
+      }
+    });
+
+    document.getElementById('loadDetailsBtn').addEventListener('click', async () => {
+      if (!state.assignmentId) return out({ error: 'assignmentId required' });
+      try {
+        const data = await apiJson('GET', `/api/v1/student/assignments/${state.assignmentId}?studentId=${state.studentId}`);
+        const wrap = document.getElementById('detailsWrap');
+        wrap.innerHTML = `
+          <div><b>${data.homeworkTitle}</b> (homeworkId=${data.homeworkId})</div>
+          <div class="muted">Due: ${data.dueAt} | Status: ${data.status}</div>
+          <div style="margin-top:10px">
+            ${data.exercises.map(ex => `
+              <div class="card" style="margin:10px 0">
+                <div><b>Exercise ${ex.orderIndex}</b> (id=${ex.exerciseId})</div>
+                <div class="muted">${ex.instructionText}</div>
+                <div style="margin-top:8px" class="muted">
+                  Latest: ${ex.latestSubmission ? `attempt ${ex.latestSubmission.attemptNo} at ${ex.latestSubmission.submittedAt}` : 'none'}
+                </div>
+                ${ex.latestSubmission ? `
+                  <div class="muted">Text: ${ex.latestSubmission.textResult ?? ''}</div>
+                  <div class="muted">Files: ${ex.latestSubmission.files.map(f => `${f.originalFilename} (id=${f.fileId})`).join(', ')}</div>
+                ` : ``}
+                <div style="margin-top:10px">
+                  <button class="secondary" data-exid="${ex.exerciseId}">Set as Upload Target</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        wrap.querySelectorAll('button[data-exid]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.getElementById('exerciseId').value = btn.getAttribute('data-exid');
+          });
+        });
+        out(data);
+      } catch (e) {
+        out(e);
+      }
+    });
+
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      const exerciseId = Number(document.getElementById('exerciseId').value);
+      if (!state.assignmentId || !exerciseId) return out({ error: 'assignmentId and exerciseId required' });
+
+      const filesInput = document.getElementById('files');
+      if (!filesInput.files || filesInput.files.length === 0) return out({ error: 'select at least 1 file' });
+
+      const form = new FormData();
+      for (const f of filesInput.files) form.append('files', f);
+      const text = document.getElementById('textResult').value;
+      if (text) form.append('textResult', text);
+
+      try {
+        const url = `/api/v1/student/assignments/${state.assignmentId}/exercises/${exerciseId}/submissions?studentId=${state.studentId}`;
+        const data = await apiMultipart(url, form);
+        out(data);
+      } catch (e) {
+        out(e);
+      }
+    });
+
+    syncUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Teacher Dashboard</title>
+    <style>
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:24px;max-width:1000px}
+        input,textarea,button{font:inherit}
+        input,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px}
+        button{padding:10px 14px;border:1px solid #222;border-radius:8px;background:#111;color:#fff;cursor:pointer}
+        button.secondary{background:#fff;color:#111}
+        .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .card{border:1px solid #ddd;border-radius:10px;padding:16px;margin:14px 0}
+        .muted{color:#666;font-size:14px}
+        pre{background:#0b1020;color:#e6e6e6;padding:12px;border-radius:10px;overflow:auto}
+        .pill{display:inline-block;padding:4px 10px;border:1px solid #ddd;border-radius:999px;font-size:12px;margin-left:8px}
+    </style>
+</head>
+<body>
+<a href="/">← Home</a>
+<h1>Teacher Dashboard</h1>
+
+<div class="card">
+    <h2>IDs</h2>
+    <div class="row">
+        <div>
+            <label class="muted">Teacher ID</label>
+            <input id="teacherId" type="number" />
+        </div>
+        <div>
+            <label class="muted">Student ID to Assign</label>
+            <input id="studentId" type="number" />
+        </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="secondary" id="saveIdsBtn">Save IDs</button>
+        <span class="muted">These are temporary until auth.</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Create Homework <span class="pill" id="hwPill">none</span></h2>
+    <div class="row">
+        <div>
+            <label class="muted">Title</label>
+            <input id="hwTitle" value="Math Week 1" />
+        </div>
+        <div>
+            <label class="muted">Due At (ISO)</label>
+            <input id="hwDueAt" value="2026-03-01T12:00:00" />
+        </div>
+    </div>
+    <div style="margin-top:12px">
+        <label class="muted">Description</label>
+        <textarea id="hwDesc" rows="3">Equations</textarea>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+        <button id="createHwBtn">Create Homework</button>
+        <span class="muted">Creates /api/v1/teacher/homeworks</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Add Exercise <span class="pill" id="exPill">homework required</span></h2>
+    <div class="row">
+        <div>
+            <label class="muted">Order Index</label>
+            <input id="exOrder" type="number" value="1" />
+        </div>
+        <div>
+            <label class="muted">Instruction</label>
+            <input id="exText" value="Solve equation x + 2 = 5" />
+        </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+        <button id="addExBtn">Add Exercise</button>
+        <span class="muted">POST /api/v1/teacher/homeworks/{id}/exercises</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Assign Homework <span class="pill" id="asPill">homework required</span></h2>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+        <button id="assignBtn">Assign To Student</button>
+        <span class="muted">POST /api/v1/teacher/homeworks/{id}/assignments</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Output</h2>
+    <pre id="out">{}</pre>
+</div>
+
+<script>
+    const out = (obj) => { document.getElementById('out').textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2); };
+    const pill = (id, text) => document.getElementById(id).textContent = text;
+
+    const state = {
+      teacherId: Number(localStorage.getItem('teacherId') || '1'),
+      studentId: Number(localStorage.getItem('studentId') || '2'),
+      homeworkId: localStorage.getItem('homeworkId') || '',
+    };
+
+    function syncUI() {
+      document.getElementById('teacherId').value = state.teacherId || '';
+      document.getElementById('studentId').value = state.studentId || '';
+      pill('hwPill', state.homeworkId ? `id=${state.homeworkId}` : 'none');
+      pill('exPill', state.homeworkId ? `homework id=${state.homeworkId}` : 'homework required');
+      pill('asPill', state.homeworkId ? `homework id=${state.homeworkId}` : 'homework required');
+    }
+
+    async function apiJson(method, url, body) {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const text = await res.text();
+      let data;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!res.ok) throw { status: res.status, data };
+      return data;
+    }
+
+    document.getElementById('saveIdsBtn').addEventListener('click', () => {
+      state.teacherId = Number(document.getElementById('teacherId').value);
+      state.studentId = Number(document.getElementById('studentId').value);
+      localStorage.setItem('teacherId', String(state.teacherId));
+      localStorage.setItem('studentId', String(state.studentId));
+      out({ saved: true, teacherId: state.teacherId, studentId: state.studentId });
+      syncUI();
+    });
+
+    document.getElementById('createHwBtn').addEventListener('click', async () => {
+      try {
+        const body = {
+          teacherId: state.teacherId,
+          title: document.getElementById('hwTitle').value,
+          description: document.getElementById('hwDesc').value,
+          dueAt: document.getElementById('hwDueAt').value
+        };
+        const data = await apiJson('POST', '/api/v1/teacher/homeworks', body);
+        const id = data.id ?? data.homeworkId ?? data?.homework?.id;
+        if (id) {
+          state.homeworkId = String(id);
+          localStorage.setItem('homeworkId', state.homeworkId);
+        }
+        out(data);
+        syncUI();
+      } catch (e) {
+        out(e);
+      }
+    });
+
+    document.getElementById('addExBtn').addEventListener('click', async () => {
+      if (!state.homeworkId) return out({ error: 'Create a homework first' });
+      try {
+        const body = {
+          orderIndex: Number(document.getElementById('exOrder').value),
+          instructionText: document.getElementById('exText').value
+        };
+        const data = await apiJson('POST', `/api/v1/teacher/homeworks/${state.homeworkId}/exercises`, body);
+        out(data);
+      } catch (e) {
+        out(e);
+      }
+    });
+
+    document.getElementById('assignBtn').addEventListener('click', async () => {
+      if (!state.homeworkId) return out({ error: 'Create a homework first' });
+      try {
+        const body = { studentIds: [state.studentId] };
+        const data = await apiJson('POST', `/api/v1/teacher/homeworks/${state.homeworkId}/assignments`, body);
+        out(data);
+        const assignmentId = Array.isArray(data) ? data[0]?.id ?? data[0]?.assignmentId : null;
+        if (assignmentId) localStorage.setItem('assignmentId', String(assignmentId));
+      } catch (e) {
+        out(e);
+      }
+    });
+
+    syncUI();
+</script>
+</body>
+</html>
