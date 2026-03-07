@@ -7,5 +7,9 @@ public record ExerciseResponse(
         Long homeworkId,
         Integer orderIndex,
         String instructionText,
-        Instant createdAt
+        Instant createdAt,
+        String imagePath,
+        String imageOriginalName,
+        String imageContentType,
+        Long imageSizeBytes
 ) {}

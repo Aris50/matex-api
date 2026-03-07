@@ -10,6 +10,7 @@ import com.matex.api.mapper.HomeworkMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.List;
 
 @Service
 public class HomeworkService {
@@ -41,4 +42,7 @@ public class HomeworkService {
         Homework hw = homeworkMapper.toEntity(req, teacher);
         return homeworkRepository.save(hw);
     }
-}
+
+    public List<Homework> getAllHomeworks() {
+        return homeworkRepository.findAll();
+    }}
