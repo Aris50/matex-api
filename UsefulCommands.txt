@@ -1,0 +1,2 @@
+For database checks: docker exec -it matex-mysql mysql -uroot -prootpass -D matex
+To run springboot app: ./mvnw spring-boot:run
