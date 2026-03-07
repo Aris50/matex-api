@@ -9,6 +9,9 @@ import com.matex.api.mapper.ExerciseMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
+import java.io.IOException;
 
 @Service
 public class ExerciseService {
@@ -16,27 +19,40 @@ public class ExerciseService {
     private final HomeworkRepository homeworkRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseMapper exerciseMapper = new ExerciseMapper();
+    private final ExerciseImageStorageService exerciseImageStorageService;
 
-    public ExerciseService(HomeworkRepository homeworkRepository, ExerciseRepository exerciseRepository) {
+    public ExerciseService(HomeworkRepository homeworkRepository, ExerciseRepository exerciseRepository, ExerciseImageStorageService exerciseImageStorageService) {
         this.homeworkRepository = homeworkRepository;
         this.exerciseRepository = exerciseRepository;
+        this.exerciseImageStorageService = exerciseImageStorageService;
     }
 
-    public Exercise addExercise(Long homeworkId, CreateExerciseRequest req) {
-        if (homeworkId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "homeworkId is required");
-        }
-        if (req.orderIndex() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "orderIndex is required");
-        }
-        if (req.instructionText() == null || req.instructionText().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "instructionText is required");
+    public Exercise addExercise(Long homeworkId, CreateExerciseRequest req, MultipartFile image) {
+        Homework homework = homeworkRepository.findById(homeworkId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Homework not found"));
+
+        Exercise exercise = exerciseMapper.toEntity(req, homework);
+        Exercise saved = exerciseRepository.save(exercise);
+
+        if (image != null && !image.isEmpty()) {
+            try {
+                ExerciseImageStorageService.StoredExerciseImage stored = exerciseImageStorageService.store(saved.getId(), image);
+
+                saved.setImagePath(stored.imagePath());
+                saved.setImageOriginalName(stored.imageOriginalName());
+                saved.setImageContentType(stored.imageContentType());
+                saved.setImageSizeBytes(stored.imageSizeBytes());
+
+                saved = exerciseRepository.save(saved);
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store exercise image");
+            }
         }
 
-        Homework hw = homeworkRepository.findById(homeworkId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "homework not found"));
+        return saved;
+    }
 
-        Exercise ex = exerciseMapper.toEntity(req, hw);
-        return exerciseRepository.save(ex);
+    public List<Exercise> getExercisesForHomework(Long homeworkId) {
+        return exerciseRepository.findByHomeworkId(homeworkId);
     }
 }

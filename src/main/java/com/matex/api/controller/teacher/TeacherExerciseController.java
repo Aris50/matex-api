@@ -1,12 +1,15 @@
 package com.matex.api.controller.teacher;
 
 import com.matex.api.domain.Exercise;
+import com.matex.api.mapper.ExerciseMapper;
 import com.matex.api.service.ExerciseService;
 import com.matex.api.web.dto.CreateExerciseRequest;
 import com.matex.api.web.dto.ExerciseResponse;
-import com.matex.api.mapper.ExerciseMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/teacher/homeworks/{homeworkId}/exercises")
@@ -19,10 +22,24 @@ public class TeacherExerciseController {
         this.exerciseService = exerciseService;
     }
 
-    @PostMapping
+    @GetMapping
+    public List<ExerciseResponse> getExercises(@PathVariable Long homeworkId) {
+        return exerciseService.getExercisesForHomework(homeworkId)
+                .stream()
+                .map(exerciseMapper::toResponse)
+                .toList();
+    }
+
+    @PostMapping(consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
-    public ExerciseResponse add(@PathVariable Long homeworkId, @RequestBody CreateExerciseRequest req) {
-        Exercise ex = exerciseService.addExercise(homeworkId, req);
+    public ExerciseResponse add(
+            @PathVariable Long homeworkId,
+            @RequestParam Integer orderIndex,
+            @RequestParam String instructionText,
+            @RequestParam(required = false) MultipartFile image
+    ) {
+        CreateExerciseRequest req = new CreateExerciseRequest(orderIndex, instructionText);
+        Exercise ex = exerciseService.addExercise(homeworkId, req, image);
         return exerciseMapper.toResponse(ex);
     }
 }

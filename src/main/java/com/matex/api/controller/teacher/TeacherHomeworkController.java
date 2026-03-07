@@ -7,6 +7,7 @@ import com.matex.api.web.dto.HomeworkResponse;
 import com.matex.api.mapper.HomeworkMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/teacher/homeworks")
@@ -24,5 +25,13 @@ public class TeacherHomeworkController {
     public HomeworkResponse create(@RequestBody CreateHomeworkRequest req) {
         Homework hw = homeworkService.createHomework(req);
         return homeworkMapper.toResponse(hw);
+    }
+
+    @GetMapping
+    public List<HomeworkResponse> getAll() {
+        return homeworkService.getAllHomeworks()
+                .stream()
+                .map(homeworkMapper::toResponse)
+                .toList();
     }
 }

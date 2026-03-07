@@ -32,4 +32,16 @@ public class Exercise {
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "image_path", length = 500)
+    private String imagePath;
+
+    @Column(name = "image_original_name", length = 255)
+    private String imageOriginalName;
+
+    @Column(name = "image_content_type", length = 100)
+    private String imageContentType;
+
+    @Column(name = "image_size_bytes")
+    private Long imageSizeBytes;
 }

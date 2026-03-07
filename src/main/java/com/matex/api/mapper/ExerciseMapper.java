@@ -21,7 +21,11 @@ public class ExerciseMapper {
                 ex.getHomework().getId(),
                 ex.getOrderIndex(),
                 ex.getInstructionText(),
-                ex.getCreatedAt()
+                ex.getCreatedAt(),
+                ex.getImagePath(),
+                ex.getImageOriginalName(),
+                ex.getImageContentType(),
+                ex.getImageSizeBytes()
         );
     }
 }
