@@ -4,8 +4,8 @@ spring:
       enabled: false
   datasource:
     url: jdbc:mysql://127.0.0.1:3307/matex?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: matex
-    password: matexpass
+    username: ${MYSQL_USER:matex}
+    password: ${MYSQL_PASSWORD:matexpass}
 
   jpa:
     hibernate:
@@ -17,6 +17,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    repair-on-migrate: true
 
 server:
   port: 8080
@@ -24,6 +25,9 @@ server:
 matex:
   storage:
     root: storage
+  jwt:
+    secret: ${JWT_SECRET:default-dev-secret-change-in-production-must-be-at-least-64-chars-long!!}
+    expiration-ms: 86400000   # 24 hours
 
 springdoc:
   api-docs:
