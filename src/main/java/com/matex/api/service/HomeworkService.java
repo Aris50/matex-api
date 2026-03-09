@@ -40,6 +40,10 @@ public class HomeworkService {
         return homeworkRepository.save(hw);
     }
 
-    public List<Homework> getAllHomeworks() {
-        return homeworkRepository.findAll();
-    }}
+    public List<Homework> getHomeworks(boolean recentOnly) {
+        if (recentOnly) {
+            return homeworkRepository.findRecentHomeworks();
+        }
+        return homeworkRepository.findAllOrderByCreatedAtDesc();
+    }
+}

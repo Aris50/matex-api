@@ -30,8 +30,8 @@ public class TeacherHomeworkController {
     }
 
     @GetMapping
-    public List<HomeworkResponse> getAll() {
-        return homeworkService.getAllHomeworks()
+    public List<HomeworkResponse> getAll(@RequestParam(required = false, defaultValue = "false") boolean recentOnly) {
+        return homeworkService.getHomeworks(recentOnly)
                 .stream()
                 .map(homeworkMapper::toResponse)
                 .toList();
