@@ -3,6 +3,7 @@ package com.matex.api.controller.student;
 import com.matex.api.service.SubmissionService;
 import com.matex.api.web.dto.SubmissionCreatedResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,11 +21,12 @@ public class StudentSubmissionController {
 
     @PostMapping(consumes = "multipart/form-data")
     @ResponseStatus(HttpStatus.CREATED)
-    public SubmissionCreatedResponse submit(@RequestParam Long studentId,
+    public SubmissionCreatedResponse submit(Authentication authentication,
                                             @PathVariable Long assignmentId,
                                             @PathVariable Long exerciseId,
-                                            @RequestPart("files") List<MultipartFile> files,
+                                            @RequestPart(value = "files", required = false) List<MultipartFile> files,
                                             @RequestPart(value = "textResult", required = false) String textResult) {
+        Long studentId = (Long) authentication.getPrincipal();
         return submissionService.submit(studentId, assignmentId, exerciseId, files, textResult);
     }
 }

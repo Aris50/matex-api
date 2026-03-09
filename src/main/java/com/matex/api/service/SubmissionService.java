@@ -49,7 +49,9 @@ public class SubmissionService {
         if (studentId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "studentId is required");
         if (assignmentId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "assignmentId is required");
         if (exerciseId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "exerciseId is required");
-        if (files == null || files.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "files is required");
+        if ((files == null || files.isEmpty()) && (textResult == null || textResult.isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "either textResult or files must be provided");
+        }
 
         var student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "student not found"));
@@ -87,7 +89,8 @@ public class SubmissionService {
         List<Long> fileIds = new ArrayList<>();
         int orderIndex = 1;
 
-        for (MultipartFile mf : files) {
+        if (files != null) {
+            for (MultipartFile mf : files) {
             var stored = storageService.store(mf);
 
             StoredFile f = new StoredFile();
@@ -104,6 +107,7 @@ public class SubmissionService {
             submissionFileRepository.save(sf);
 
             fileIds.add(f.getId());
+            }
         }
 
         return new SubmissionCreatedResponse(

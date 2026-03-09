@@ -114,6 +114,7 @@ public class StudentAssignmentDetailsService {
                     ex.getOrderIndex(),
                     ex.getInstructionText(),
                     ex.getCreatedAt(),
+                    ex.getImagePath(),
                     latestDto
             );
         }).toList();

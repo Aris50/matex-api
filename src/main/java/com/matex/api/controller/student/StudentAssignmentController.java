@@ -2,6 +2,7 @@ package com.matex.api.controller.student;
 
 import com.matex.api.service.StudentAssignmentQueryService;
 import com.matex.api.web.dto.StudentAssignmentListItemResponse;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +18,8 @@ public class StudentAssignmentController {
     }
 
     @GetMapping
-    public List<StudentAssignmentListItemResponse> list(@RequestParam Long studentId) {
+    public List<StudentAssignmentListItemResponse> list(Authentication authentication) {
+        Long studentId = (Long) authentication.getPrincipal();
         return queryService.listForStudent(studentId);
     }
 }

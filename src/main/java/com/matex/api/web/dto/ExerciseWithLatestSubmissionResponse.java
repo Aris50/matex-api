@@ -7,5 +7,6 @@ public record ExerciseWithLatestSubmissionResponse(
         Integer orderIndex,
         String instructionText,
         Instant createdAt,
+        String imagePath,
         LatestSubmissionResponse latestSubmission
 ) {}
