@@ -24,8 +24,8 @@ public class StudentSubmissionController {
     public SubmissionCreatedResponse submit(Authentication authentication,
                                             @PathVariable Long assignmentId,
                                             @PathVariable Long exerciseId,
-                                            @RequestPart(value = "files", required = false) List<MultipartFile> files,
-                                            @RequestPart(value = "textResult", required = false) String textResult) {
+                                            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                                            @RequestParam(value = "textResult", required = false) String textResult) {
         Long studentId = (Long) authentication.getPrincipal();
         return submissionService.submit(studentId, assignmentId, exerciseId, files, textResult);
     }

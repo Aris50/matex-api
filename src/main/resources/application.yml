@@ -2,6 +2,11 @@ spring:
   docker:
     compose:
       enabled: false
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 50MB
   datasource:
     url: jdbc:mysql://127.0.0.1:3307/matex?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${MYSQL_USER:matex}
