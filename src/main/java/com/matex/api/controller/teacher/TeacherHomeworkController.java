@@ -6,6 +6,7 @@ import com.matex.api.web.dto.CreateHomeworkRequest;
 import com.matex.api.web.dto.HomeworkResponse;
 import com.matex.api.mapper.HomeworkMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -22,8 +23,9 @@ public class TeacherHomeworkController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public HomeworkResponse create(@RequestBody CreateHomeworkRequest req) {
-        Homework hw = homeworkService.createHomework(req);
+    public HomeworkResponse create(@RequestBody CreateHomeworkRequest req, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        Homework hw = homeworkService.createHomework(req, userId);
         return homeworkMapper.toResponse(hw);
     }
 

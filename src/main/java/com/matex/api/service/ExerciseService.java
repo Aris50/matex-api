@@ -27,11 +27,16 @@ public class ExerciseService {
         this.exerciseImageStorageService = exerciseImageStorageService;
     }
 
-    public Exercise addExercise(Long homeworkId, CreateExerciseRequest req, MultipartFile image) {
+    public Exercise addExercise(Long homeworkId, String instructionText, MultipartFile image) {
         Homework homework = homeworkRepository.findById(homeworkId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Homework not found"));
 
-        Exercise exercise = exerciseMapper.toEntity(req, homework);
+        int nextOrder = exerciseRepository.findMaxOrderIndexByHomeworkId(homeworkId) + 1;
+
+        Exercise exercise = new Exercise();
+        exercise.setHomework(homework);
+        exercise.setOrderIndex(nextOrder);
+        exercise.setInstructionText(instructionText);
         Exercise saved = exerciseRepository.save(exercise);
 
         if (image != null && !image.isEmpty()) {

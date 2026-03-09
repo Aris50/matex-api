@@ -34,12 +34,10 @@ public class TeacherExerciseController {
     @ResponseStatus(HttpStatus.CREATED)
     public ExerciseResponse add(
             @PathVariable Long homeworkId,
-            @RequestParam Integer orderIndex,
             @RequestParam String instructionText,
             @RequestParam(required = false) MultipartFile image
     ) {
-        CreateExerciseRequest req = new CreateExerciseRequest(orderIndex, instructionText);
-        Exercise ex = exerciseService.addExercise(homeworkId, req, image);
+        Exercise ex = exerciseService.addExercise(homeworkId, instructionText, image);
         return exerciseMapper.toResponse(ex);
     }
 }

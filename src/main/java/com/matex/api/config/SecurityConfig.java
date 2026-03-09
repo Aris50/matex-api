@@ -29,10 +29,14 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(cors -> {})  // enable CORS — picks up the CorsConfig bean
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        // allow all preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // public
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/health").permitAll()
@@ -45,6 +49,9 @@ public class SecurityConfig {
 
                         // static resources
                         .requestMatchers(HttpMethod.GET, "/", "/index.html", "/student.html", "/teacher.html", "/*.js", "/*.css").permitAll()
+
+                        // storage files (public — UUID filenames are unguessable)
+                        .requestMatchers("/storage/**").permitAll()
 
                         // owner-only
                         .requestMatchers("/api/v1/owner/**").hasRole("OWNER")

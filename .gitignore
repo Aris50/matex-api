@@ -39,3 +39,6 @@ storage/
 *.log
 .DS_Store
 UsefulCommands.txt
+compose.yaml.bak
+
+run.sh

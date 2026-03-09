@@ -24,19 +24,16 @@ public class HomeworkService {
         this.userRepository = userRepository;
     }
 
-    public Homework createHomework(CreateHomeworkRequest req) {
-        if (req.teacherId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "teacherId is required");
-        }
+    public Homework createHomework(CreateHomeworkRequest req, Long userId) {
         if (req.title() == null || req.title().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required");
         }
 
-        User teacher = userRepository.findById(req.teacherId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "teacher not found"));
+        User teacher = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
 
-        if (teacher.getRole() != UserRole.TEACHER) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "user is not a teacher");
+        if (teacher.getRole() != UserRole.TEACHER && teacher.getRole() != UserRole.OWNER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "user is not a teacher or owner");
         }
 
         Homework hw = homeworkMapper.toEntity(req, teacher);
