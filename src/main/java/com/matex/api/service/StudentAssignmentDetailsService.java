@@ -94,6 +94,7 @@ public class StudentAssignmentDetailsService {
                         .stream()
                         .map(sf -> new SubmissionFileResponse(
                                 sf.getFile().getId(),
+                                sf.getFile().getStorageKey(),
                                 sf.getFile().getOriginalFilename(),
                                 sf.getFile().getContentType(),
                                 sf.getFile().getSizeBytes()
@@ -122,6 +123,111 @@ public class StudentAssignmentDetailsService {
         return new StudentAssignmentDetailsResponse(
                 assignment.getId(),
                 assignment.getStatus().name(),
+                assignment.getAssignedAt(),
+                homework.getId(),
+                homework.getTitle(),
+                homework.getDescription(),
+                homework.getDueAt(),
+                exerciseDtos
+        );
+    }
+
+    /**
+     * Teacher-facing: get full assignment details without ownership check.
+     */
+    public StudentAssignmentDetailsResponse getDetailsForTeacher(Long assignmentId) {
+        if (assignmentId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "assignmentId is required");
+
+        var assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "assignment not found"));
+
+        var homework = assignment.getHomework();
+        List<Exercise> exercises = exerciseRepository.findByHomeworkIdOrderByOrderIndexAsc(homework.getId());
+
+        List<ExerciseSubmission> subs = submissionRepository.findByStudentAssignmentId(assignmentId);
+
+        Map<Long, ExerciseSubmission> latestByExercise = new HashMap<>();
+        for (ExerciseSubmission s : subs) {
+            Long exId = s.getExercise().getId();
+            ExerciseSubmission current = latestByExercise.get(exId);
+            if (current == null || s.getAttemptNo() > current.getAttemptNo()) {
+                latestByExercise.put(exId, s);
+            }
+        }
+
+        List<Long> latestSubmissionIds = latestByExercise.values().stream()
+                .map(ExerciseSubmission::getId)
+                .toList();
+
+        Map<Long, List<SubmissionFile>> filesBySubmissionId = new HashMap<>();
+        if (!latestSubmissionIds.isEmpty()) {
+            List<SubmissionFile> allFiles = submissionFileRepository.findBySubmissionIdIn(latestSubmissionIds);
+            for (SubmissionFile sf : allFiles) {
+                filesBySubmissionId.computeIfAbsent(sf.getSubmission().getId(), k -> new ArrayList<>()).add(sf);
+            }
+            for (List<SubmissionFile> list : filesBySubmissionId.values()) {
+                list.sort(Comparator.comparingInt(SubmissionFile::getOrderIndex));
+            }
+        }
+
+        List<ExerciseWithLatestSubmissionResponse> exerciseDtos = exercises.stream().map(ex -> {
+            ExerciseSubmission latest = latestByExercise.get(ex.getId());
+            LatestSubmissionResponse latestDto = null;
+
+            if (latest != null) {
+                List<SubmissionFileResponse> fileDtos = filesBySubmissionId.getOrDefault(latest.getId(), List.of())
+                        .stream()
+                        .map(sf -> new SubmissionFileResponse(
+                                sf.getFile().getId(),
+                                sf.getFile().getStorageKey(),
+                                sf.getFile().getOriginalFilename(),
+                                sf.getFile().getContentType(),
+                                sf.getFile().getSizeBytes()
+                        ))
+                        .toList();
+
+                latestDto = new LatestSubmissionResponse(
+                        latest.getId(),
+                        latest.getAttemptNo(),
+                        latest.getTextResult(),
+                        latest.getSubmittedAt(),
+                        fileDtos
+                );
+            }
+
+            return new ExerciseWithLatestSubmissionResponse(
+                    ex.getId(),
+                    ex.getOrderIndex(),
+                    ex.getInstructionText(),
+                    ex.getCreatedAt(),
+                    ex.getImagePath(),
+                    latestDto
+            );
+        }).toList();
+
+        // Compute delivery status
+        int totalExercises = exercises.size();
+        int exercisesWithSubmissions = latestByExercise.size();
+        String deliveryStatus;
+        if (exercisesWithSubmissions == 0) {
+            deliveryStatus = "UNDELIVERED";
+        } else if (exercisesWithSubmissions < totalExercises) {
+            deliveryStatus = "PARTLY_DELIVERED";
+        } else {
+            // All exercises have submissions — check if any were late
+            if (homework.getDueAt() != null) {
+                java.time.Instant dueInstant = homework.getDueAt().atZone(java.time.ZoneId.systemDefault()).toInstant();
+                boolean anyLate = latestByExercise.values().stream()
+                        .anyMatch(s -> s.getSubmittedAt().isAfter(dueInstant));
+                deliveryStatus = anyLate ? "DELIVERED_LATE" : "DELIVERED";
+            } else {
+                deliveryStatus = "DELIVERED";
+            }
+        }
+
+        return new StudentAssignmentDetailsResponse(
+                assignment.getId(),
+                deliveryStatus,
                 assignment.getAssignedAt(),
                 homework.getId(),
                 homework.getTitle(),
